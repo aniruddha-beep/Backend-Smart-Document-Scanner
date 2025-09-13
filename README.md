@@ -15,3 +15,4 @@ Flask (Python web framework)
 pdfplumber / PyPDF2 (PDF parsing)
 python-docx (DOCX parsing)
 
+The backend is deployed on Render: [Live Backend Link](https://backend-smart-document-scanner-1.onrender.com/)
