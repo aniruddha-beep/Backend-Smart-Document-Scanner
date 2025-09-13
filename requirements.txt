@@ -4,3 +4,4 @@ pdfplumber
 python-docx
 pymysql
 requests
+mysql-connector-python
