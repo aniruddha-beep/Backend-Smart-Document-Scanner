@@ -1,5 +1,6 @@
 flask
+gunicorn
 pdfplumber
 python-docx
 pymysql
-gunicorn
+requests
