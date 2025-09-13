@@ -1,0 +1,5 @@
+flask
+pdfplumber
+python-docx
+pymysql
+gunicorn
