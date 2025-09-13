@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Document Scanner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col items-center justify-center p-4">
+
+    <!-- Main Container -->
+    <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-4xl transform transition-all duration-300 hover:shadow-2xl">
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">Smart Document Scanner 📄</h1>
+        <p class="text-center text-gray-500 mb-8">Upload a DOCX or PDF file to extract its text content and get an AI analysis.</p>
+
+        <!-- File Upload Form -->
+        <form id="uploadForm" class="flex flex-col items-center space-y-6">
+            <div class="w-full">
+                <label for="document" class="block text-sm font-medium text-gray-700 mb-2">Select your file:</label>
+                <input type="file" id="document" name="document" required
+                    class="block w-full text-sm text-gray-500
+                    file:mr-4 file:py-2 file:px-4
+                    file:rounded-full file:border-0
+                    file:text-sm file:font-semibold
+                    file:bg-violet-50 file:text-violet-700
+                    hover:file:bg-violet-100
+                    focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2">
+            </div>
+            
+            <button type="submit" id="submitBtn"
+                class="w-full flex justify-center items-center py-3 px-6 border border-transparent rounded-full shadow-sm text-lg font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 ease-in-out disabled:bg-gray-400 disabled:cursor-not-allowed">
+                <span id="buttonText">Extract & Analyze</span>
+                <svg id="loadingSpinner" class="animate-spin h-5 w-5 text-white ml-2 hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+            </button>
+        </form>
+
+        <!-- Results Container -->
+        <div id="results" class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Extracted Content Column -->
+            <div>
+                <h2 class="text-xl font-semibold text-gray-700 mb-4">Extracted Content:</h2>
+                <div id="contentBox" class="bg-gray-50 p-6 rounded-lg border border-gray-200 overflow-y-auto max-h-96 whitespace-pre-wrap text-gray-800 text-sm">
+                    <p class="text-gray-400 text-center">Your extracted text will appear here.</p>
+                </div>
+            </div>
+
+            <!-- Analysis Column -->
+            <div>
+                <h2 class="text-xl font-semibold text-gray-700 mb-4">AI Analysis:</h2>
+                <div id="analysisBox" class="bg-gray-50 p-6 rounded-lg border border-gray-200 overflow-y-auto max-h-96 text-gray-800 text-sm">
+                    <p class="text-gray-400 text-center">The AI's analysis will appear here after scanning.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Custom Message Box -->
+        <div id="messageBox" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4 z-50 hidden">
+            <div class="bg-white rounded-lg p-6 shadow-xl max-w-sm w-full">
+                <p id="messageText" class="text-gray-800 text-lg font-semibold text-center mb-4"></p>
+                <button id="messageCloseBtn" class="w-full py-2 px-4 rounded-full text-white font-medium bg-blue-600 hover:bg-blue-700">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('uploadForm');
+        const fileInput = document.getElementById('document');
+        const submitBtn = document.getElementById('submitBtn');
+        const buttonText = document.getElementById('buttonText');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        const contentBox = document.getElementById('contentBox');
+        const analysisBox = document.getElementById('analysisBox');
+        const messageBox = document.getElementById('messageBox');
+        const messageText = document.getElementById('messageText');
+        const messageCloseBtn = document.getElementById('messageCloseBtn');
+
+        function showMessage(message) {
+            messageText.textContent = message;
+            messageBox.classList.remove('hidden');
+        }
+
+        messageCloseBtn.addEventListener('click', () => {
+            messageBox.classList.add('hidden');
+        });
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const file = fileInput.files[0];
+            if (!file) {
+                showMessage("Please select a file to upload.");
+                return;
+            }
+
+            submitBtn.disabled = true;
+            buttonText.textContent = 'Analyzing...';
+            loadingSpinner.classList.remove('hidden');
+            contentBox.innerHTML = `<p class="text-gray-400 text-center">Extracting text...</p>`;
+            analysisBox.innerHTML = `<p class="text-gray-400 text-center">Analyzing content...</p>`;
+
+            const formData = new FormData();
+            formData.append('document', file);
+
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Display the extracted content
+                    if (data.content) {
+                        contentBox.textContent = data.content;
+                    } else {
+                        contentBox.textContent = "No text could be extracted from the document.";
+                    }
+
+                    // Display the structured analysis
+                    if (data.analysis && data.analysis.analysis_summary) {
+                        let analysisHtml = `<p class="font-bold mb-4">${data.analysis.analysis_summary}</p>`;
+                        if (data.analysis.missing_items && data.analysis.missing_items.length > 0) {
+                            analysisHtml += `<ul class="list-disc pl-5 space-y-2">`;
+                            data.analysis.missing_items.forEach(item => {
+                                analysisHtml += `<li><span class="font-semibold text-blue-600">${item.item}:</span> ${item.reason}</li>`;
+                            });
+                            analysisHtml += `</ul>`;
+                        } else {
+                            analysisHtml += `<p>The document seems to be complete. Good job!</p>`;
+                        }
+                        analysisBox.innerHTML = analysisHtml;
+                    } else {
+                        analysisBox.innerHTML = `<p class="text-red-500">Could not retrieve AI analysis.</p>`;
+                    }
+
+                } else {
+                    showMessage(`Error: ${data.error}`);
+                    contentBox.innerHTML = `<p class="text-red-500 text-center">Error: ${data.error}</p>`;
+                    analysisBox.innerHTML = `<p class="text-red-500 text-center">Analysis failed.</p>`;
+                }
+            } catch (error) {
+                console.error('Fetch error:', error);
+                showMessage('An unexpected error occurred. Please check the server and try again.');
+                contentBox.innerHTML = `<p class="text-red-500 text-center">An error occurred.</p>`;
+                analysisBox.innerHTML = `<p class="text-red-500 text-center">Analysis failed.</p>`;
+            } finally {
+                submitBtn.disabled = false;
+                buttonText.textContent = 'Extract & Analyze';
+                loadingSpinner.classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
